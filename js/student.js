@@ -189,41 +189,28 @@ function saveResult() {
         date: new Date().toISOString().split("T")[0]
     };
 
-    // رابط Firebase
-    const firebaseURL = "https://quiz-262a8-default-rtdb.firebaseio.com";
-
     const today = result.date;
     const uniqueKey = `${studentId}_${selectedMaterial}_${today}`;
 
     // التحقق من محاولة اليوم
-    fetch(`${firebaseURL}/results/${uniqueKey}.json`)
-      .then(res => res.json())
-      .then(existing => {
+    db.ref("results/" + uniqueKey).once("value", snapshot => {
 
-          if (existing) {
-              document.body.innerHTML = `
-                  <div style="text-align:center; margin-top:80px; font-size:24px;">
-                      <b>لقد قمت بحل اختبار هذه المادة اليوم</b><br><br>
-                      لا يمكنك إعادة المحاولة إلا غدًا.<br><br>
-                      إذا كنت تحتاج لمحاولة إضافية، تواصل مع المعلم.
-                  </div>
-              `;
-              return;
-          }
+        if (snapshot.exists()) {
+            document.body.innerHTML = `
+                <div style="text-align:center; margin-top:80px; font-size:24px;">
+                    <b>لقد قمت بحل اختبار هذه المادة اليوم</b><br><br>
+                    لا يمكنك إعادة المحاولة إلا غدًا.<br><br>
+                    إذا كنت تحتاج لمحاولة إضافية، تواصل مع المعلم.
+                </div>
+            `;
+            return;
+        }
 
-          // حفظ النتيجة لأول مرة
-          fetch(`${firebaseURL}/results/${uniqueKey}.json`, {
-              method: "PUT",
-              headers: {
-                  "Content-Type": "application/json"
-              },
-              body: JSON.stringify(result)
-          })
-          .then(() => {
-              console.log("تم حفظ النتيجة في Firebase");
-          })
-          .catch(err => console.error("فشل الحفظ:", err));
-      });
+        // حفظ النتيجة
+        db.ref("results/" + uniqueKey).set(result)
+            .then(() => console.log("تم حفظ النتيجة في Firebase"))
+            .catch(err => console.error("خطأ:", err));
+    });
 }
 
 // 7) عرض النتيجة النهائية
@@ -295,4 +282,5 @@ function goToNextSection() {
     sessionStorage.setItem("currentSession", JSON.stringify(sessionData));
     window.location.href = "student.html";
 }
+
 
