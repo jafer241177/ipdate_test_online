@@ -11,6 +11,25 @@ fetch("data/students.json")
   .then(json => students = json)
   .catch(err => console.error("خطأ في تحميل students.json", err));
 
+
+// -----------------------------
+// 🔥 إضافة Firebase هنا
+// -----------------------------
+var firebaseConfig = {
+  apiKey: "AIzaSyD-xxxxxxxxxxxxxxxxxxxx",
+  authDomain: "quiz-262a8.firebaseapp.com",
+  databaseURL: "https://quiz-262a8-default-rtdb.firebaseio.com",
+  projectId: "quiz-262a8",
+  storageBucket: "quiz-262a8.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:xxxxxxxxxxxx"
+};
+
+firebase.initializeApp(firebaseConfig);
+var db = firebase.database();
+// -----------------------------
+
+
 document.getElementById("startBtn").addEventListener("click", () => {
     const studentId = document.getElementById("studentId").value.trim();
     const material = document.getElementById("materialSelect").value;
@@ -21,22 +40,26 @@ document.getElementById("startBtn").addEventListener("click", () => {
         return;
     }
 
-    // المعلم
-  if (studentId === TEACHER_ID) {
+    // -----------------------------
+    // 🔥 المعلم
+    // -----------------------------
+    if (studentId === TEACHER_ID) {
 
-    const sessionData = {
-        id: TEACHER_ID,
-        name: "المعلم المسؤول"
-    };
+        const sessionData = {
+            id: TEACHER_ID,
+            name: "المعلم المسؤول"
+        };
 
-    sessionStorage.setItem("currentSession", JSON.stringify(sessionData));
+        sessionStorage.setItem("currentSession", JSON.stringify(sessionData));
 
-    window.location.href = "report.html";
-    return;
-}
+        window.location.href = "report.html";
+        return;
+    }
 
 
-    // طالب عادي
+    // -----------------------------
+    // 🔥 طالب عادي
+    // -----------------------------
     if (!material) {
         alert("اختر المادة");
         return;
@@ -49,15 +72,32 @@ document.getElementById("startBtn").addEventListener("click", () => {
         return;
     }
 
-    // حفظ بيانات الدخول في sessionStorage ليستخدمها student.html
-    const sessionData = {
-        id: student.id,
-        name: student.name,
-        material: material
-    };
+    // -----------------------------
+    // 🔥 منع الطالب من البداية (قبل الدخول)
+    // -----------------------------
+    const today = new Date().toISOString().split("T")[0];
+    const uniqueKey = `${studentId}_${material}_${today}`;
 
-    sessionStorage.setItem("currentSession", JSON.stringify(sessionData));
+    db.ref("results/" + uniqueKey).once("value", snapshot => {
 
-    // الانتقال لصفحة الاختبار
-    window.location.href = "student.html";
+        if (snapshot.exists()) {
+            alert("لقد قمت بحل اختبار هذه المادة اليوم. لا يمكنك الدخول مرة أخرى.");
+            return;
+        }
+
+        // -----------------------------
+        // 🔥 إذا لم يحل → نسمح له بالدخول
+        // -----------------------------
+        const sessionData = {
+            id: student.id,
+            name: student.name,
+            material: material
+        };
+
+        sessionStorage.setItem("currentSession", JSON.stringify(sessionData));
+
+        // الانتقال لصفحة الاختبار
+        window.location.href = "student.html";
+    });
+
 });
