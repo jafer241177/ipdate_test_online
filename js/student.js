@@ -17,11 +17,11 @@ let studentName = "";
 let selectedMaterial = "";
 
 // مؤقت القسم (25 دقيقة)
-let sectionTime = 25 * 60; 
+let sectionTime = 25 * 60;
 let sectionTimer = null;
 
 // لتجميع درجات المهارات
-let skillStats = {}; 
+let skillStats = {};
 
 // 1) استرجاع بيانات الجلسة
 const sessionDataRaw = sessionStorage.getItem("currentSession");
@@ -144,8 +144,9 @@ window.checkAnswer = function(choice) {
     loadQuestion();
 };
 
-// 6) حفظ النتيجة
+// 6) حفظ النتيجة (Firebase)
 function saveResult() {
+
     const attemptsKey = `${studentId}_${selectedMaterial}_attempts`;
     let attemptsCount = Number(localStorage.getItem(attemptsKey) || "0");
     attemptsCount++;
@@ -175,34 +176,41 @@ function saveResult() {
         date: new Date().toISOString().split("T")[0]
     };
 
-    const resultKey = `${studentId}_${selectedMaterial}_attempt_${attemptsCount}`;
-    localStorage.setItem(resultKey, JSON.stringify(result));
+    // رابط Firebase
+    const firebaseURL = "https://quiz-262a8-default-rtdb.firebaseio.com";
 
-    // إرسال إلى Google Apps Script
-    fetch("https://script.google.com/macros/s/AKfycbzk2uZzEadxg9stpKzbtbGaxAjkCOzytc42veiGIBKYZYq9BalXRf472ol96LG_bOOt/exec", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(result)
-    })
-    .then(res => res.text())
-    .then(msg => {
+    const today = result.date;
+    const uniqueKey = `${studentId}_${selectedMaterial}_${today}`;
 
-        if (msg === "ALREADY_DONE") {
-            document.body.innerHTML = `
-                <div style="text-align:center; margin-top:80px; font-size:24px;">
-                    <b>لقد قمت بحل اختبار هذه المادة اليوم</b><br><br>
-                    لا يمكنك إعادة المحاولة إلا غدًا.<br><br>
-                    إذا كنت تحتاج لمحاولة إضافية، تواصل مع المعلم.
-                </div>
-            `;
-            return;
-        }
+    // التحقق من محاولة اليوم
+    fetch(`${firebaseURL}/results/${uniqueKey}.json`)
+      .then(res => res.json())
+      .then(existing => {
 
-        console.log("تم إرسال النتيجة:", msg);
-    })
-    .catch(err => console.error("فشل الإرسال:", err));
+          if (existing) {
+              document.body.innerHTML = `
+                  <div style="text-align:center; margin-top:80px; font-size:24px;">
+                      <b>لقد قمت بحل اختبار هذه المادة اليوم</b><br><br>
+                      لا يمكنك إعادة المحاولة إلا غدًا.<br><br>
+                      إذا كنت تحتاج لمحاولة إضافية، تواصل مع المعلم.
+                  </div>
+              `;
+              return;
+          }
+
+          // حفظ النتيجة لأول مرة
+          fetch(`${firebaseURL}/results/${uniqueKey}.json`, {
+              method: "PUT",
+              headers: {
+                  "Content-Type": "application/json"
+              },
+              body: JSON.stringify(result)
+          })
+          .then(() => {
+              console.log("تم حفظ النتيجة في Firebase");
+          })
+          .catch(err => console.error("فشل الحفظ:", err));
+      });
 }
 
 // 7) عرض النتيجة النهائية
