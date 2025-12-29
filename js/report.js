@@ -1,4 +1,3 @@
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 // ===============================
 // 1) التحقق من هوية المعلم
@@ -241,5 +240,6 @@ function exportToExcel() {
     // حفظ الملف
     XLSX.writeFile(workbook, "تقرير_الطلاب.xlsx");
 }
+
 
 
