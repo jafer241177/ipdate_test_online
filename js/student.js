@@ -17,13 +17,13 @@ let studentName = "";
 let selectedMaterial = "";
 
 // مؤقت القسم (25 دقيقة)
-let sectionTime = 25 * 60; // بالثواني
+let sectionTime = 25 * 60; 
 let sectionTimer = null;
 
 // لتجميع درجات المهارات
 let skillStats = {}; 
 
-// 1) استرجاع بيانات الجلسة من index
+// 1) استرجاع بيانات الجلسة
 const sessionDataRaw = sessionStorage.getItem("currentSession");
 if (!sessionDataRaw) {
     alert("لا توجد جلسة نشطة، الرجاء الدخول من الصفحة الرئيسية.");
@@ -56,7 +56,6 @@ fetch("data/questions.json")
       currentQuestions = selected.questions;
       total = currentQuestions.length;
 
-      // تهيئة skillStats
       currentQuestions.forEach(q => {
           if (!skillStats[q.skill]) {
               skillStats[q.skill] = { correct: 0, total: 0 };
@@ -64,7 +63,6 @@ fetch("data/questions.json")
           skillStats[q.skill].total++;
       });
 
-      // ✅ نبدأ المؤقت والأسئلة مباشرة بدون زر ابدأ
       startSectionTimer();
       loadQuestion();
   })
@@ -73,14 +71,13 @@ fetch("data/questions.json")
       alert("خطأ في تحميل الأسئلة");
   });
 
-// 3) مؤقت القسم (25 دقيقة لكل قسم)
+// 3) مؤقت القسم
 function startSectionTimer() {
-    const totalTime = sectionTime; // ثابت لاحتساب النسبة في شريط التقدم
+    const totalTime = sectionTime;
 
     sectionTimer = setInterval(() => {
         sectionTime--;
 
-        // تحديث الوقت النصي
         const minutes = Math.floor(sectionTime / 60);
         const seconds = sectionTime % 60;
 
@@ -90,24 +87,19 @@ function startSectionTimer() {
                 `الوقت المتبقي: ${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
         }
 
-        // تحديث شريط التقدم
         const bar = document.getElementById("timeBar");
         if (bar) {
             const percent = (sectionTime / totalTime) * 100;
             bar.style.width = percent + "%";
         }
 
-        // انتهاء الوقت
         if (sectionTime <= 0) {
             clearInterval(sectionTimer);
 
-            // إذا كان هذا هو القسم الأول → انتقل للقسم التالي
             if (!sessionStorage.getItem("sectionDone")) {
                 sessionStorage.setItem("sectionDone", "yes");
                 goToNextSection();
-            } 
-            // إذا كان القسم الثاني → أنهِ الاختبار
-            else {
+            } else {
                 saveResult();
                 showFinalResult();
             }
@@ -120,11 +112,7 @@ function startSectionTimer() {
 function loadQuestion() {
     const q = currentQuestions[currentIndex];
 
-    // إذا لا يوجد سؤال = انتهت أسئلة هذا القسم
     if (!q) {
-        // في أي قسم، إذا انتهت الأسئلة يدويًا (قبل الوقت)، نتعامل مثل انتهاء طبيعي:
-        // في القسم الأول: نعرض نتيجة هذا القسم ونسمح بالقسم التالي (كما كان نظامك)
-        // في القسم الثاني: ننهي الاختبار
         saveResult();
         showFinalResult();
         return;
@@ -140,7 +128,7 @@ function loadQuestion() {
     `;
 }
 
-// 5) التحقق من الإجابة (بدون تلوين)
+// 5) التحقق من الإجابة
 window.checkAnswer = function(choice) {
     const q = currentQuestions[currentIndex];
     const correct = q.correct;
@@ -163,7 +151,6 @@ function saveResult() {
     attemptsCount++;
     localStorage.setItem(attemptsKey, attemptsCount.toString());
 
-    // حساب المهارات
     let skillsResult = {};
     const skillNames = Object.keys(skillStats);
     skillNames.forEach(skillName => {
@@ -176,7 +163,6 @@ function saveResult() {
         };
     });
 
-    // إنشاء النتيجة
     const result = {
         id: studentId,
         name: studentName,
@@ -189,7 +175,6 @@ function saveResult() {
         date: new Date().toISOString().split("T")[0]
     };
 
-    // حفظ محلي
     const resultKey = `${studentId}_${selectedMaterial}_attempt_${attemptsCount}`;
     localStorage.setItem(resultKey, JSON.stringify(result));
 
@@ -219,9 +204,6 @@ function saveResult() {
     })
     .catch(err => console.error("فشل الإرسال:", err));
 }
-
-
-
 
 // 7) عرض النتيجة النهائية
 function showFinalResult() {
@@ -258,14 +240,12 @@ function showFinalResult() {
 
     const sectionDone = sessionStorage.getItem("sectionDone");
 
-    // إذا لم يكن أنهى قسم سابق → نظهر زر القسم التالي
     if (!sectionDone) {
         nextBtn.style.display = "inline-block";
     } else {
         nextBtn.style.display = "none";
     }
 
-    // تسجيل أن الطالب أنهى القسم الأول
     if (!sectionDone) {
         sessionStorage.setItem("sectionDone", "yes");
     }
