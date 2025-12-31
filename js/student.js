@@ -4,7 +4,7 @@
 var firebaseConfig = {
   apiKey: "AIzaSyD-xxxxxxxxxxxxxxxxxxxx",
   authDomain: "quiz-262a8.firebaseapp.com",
-  databaseURL: "https://quiz-262a8-default-rtdb.firebaseio.com",
+  databaseURL: "https://quiz26-caf2f-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "quiz-262a8",
   storageBucket: "quiz-262a8.appspot.com",
   messagingSenderId: "123456789",
@@ -26,7 +26,7 @@ let currentQuestions = [];
 let currentIndex = 0;
 let score = 0;
 let total = 0;
-
+let studentAnswers = {};
 let studentId = "";
 let studentName = "";
 let selectedMaterial = "";
@@ -174,37 +174,81 @@ function loadQuestion() {
         showFinalResult();
         return;
     }
+document.getElementById("quizArea").style.display = "block";
 
     document.getElementById("quizArea").innerHTML = `
         <div class="question-box">
             ${renderContent(q.q)}
         </div>
 
-        <div class="option" onclick="checkAnswer(0)">
-            ${renderContent(q.a)}
-        </div>
+        <form id="optionsForm">
 
-        <div class="option" onclick="checkAnswer(1)">
-            ${renderContent(q.b)}
-        </div>
+            <label class="option">
+                <input type="radio" name="answer" value="0">
+                ${renderContent(q.a)}
+            </label>
 
-        <div class="option" onclick="checkAnswer(2)">
-            ${renderContent(q.c)}
-        </div>
+            <label class="option">
+                <input type="radio" name="answer" value="1">
+                ${renderContent(q.b)}
+            </label>
 
-        <div class="option" onclick="checkAnswer(3)">
-            ${renderContent(q.d)}
-        </div>
+            <label class="option">
+                <input type="radio" name="answer" value="2">
+                ${renderContent(q.c)}
+            </label>
+
+            <label class="option">
+                <input type="radio" name="answer" value="3">
+                ${renderContent(q.d)}
+            </label>
+
+        </form>
+
+        <div style="display:flex; gap:10px; margin-top:20px;">
+    <button class="next-btn" style="flex:1;" onclick="previousQuestion()">السابق</button>
+    <button class="next-btn" style="flex:1;" onclick="submitAnswer()">التالي</button>
+</div>
+
     `;
+    // إعادة اختيار الإجابة السابقة إن وجدت
+if (studentAnswers[currentIndex] !== undefined) {
+    const prev = studentAnswers[currentIndex];
+    const radio = document.querySelector(`input[name="answer"][value="${prev}"]`);
+    if (radio) radio.checked = true;
+}
+
 }
 
 
-// 5) التحقق من الإجابة
-window.checkAnswer = function(choice) {
-    const q = currentQuestions[currentIndex];
-    const correct = q.correct;
+// زر السابق
+window.previousQuestion = function () {
+    if (currentIndex > 0) {
+        currentIndex--;
+        loadQuestion();
+    }
+};
 
-    if (choice === correct) {
+
+// 5) التحقق من الإجابة
+
+window.submitAnswer = function () {
+    const selected = document.querySelector('input[name="answer"]:checked');
+console.log("إجابات الطالب حتى الآن:", studentAnswers);
+
+    if (!selected) {
+        alert("الرجاء اختيار إجابة");
+        return;
+    }
+
+    const choice = Number(selected.value);
+    const q = currentQuestions[currentIndex];
+
+    // حفظ الإجابة في الذاكرة
+    studentAnswers[currentIndex] = choice;
+
+    // تحديث الدرجات
+    if (choice === q.correct) {
         score++;
         if (skillStats[q.skill]) {
             skillStats[q.skill].correct++;
@@ -214,6 +258,8 @@ window.checkAnswer = function(choice) {
     currentIndex++;
     loadQuestion();
 };
+
+
 
 // 6) حفظ النتيجة (Firebase)
 function saveResult() {
